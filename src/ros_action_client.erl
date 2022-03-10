@@ -69,7 +69,7 @@ on_topic_msg(Name, Msg) ->
 %callbacks
 init(#state{node = Node,
             action_interface = Action,
-            callback_handler = CallbackHandler} =
+            callback_handler = _CallbackHandler} =
          S) ->
     ClientName = {?MODULE, Node, Action},
     pg:join(ClientName, self()),
@@ -110,7 +110,7 @@ terminate( _, #state{node = Node,
                             cancel_goal_client = CancelGoalClient,
                             get_result_client = GetResultClient,
                             feed_subscription = FeedbackSub,
-                            status_subscription = StatusSub} = S) ->
+                            status_subscription = StatusSub}) ->
     ros_node:destroy_subscription(Node, FeedbackSub),
     ros_node:destroy_subscription(Node, StatusSub),
     ros_node:destroy_client(Node, RequestGoalClient),

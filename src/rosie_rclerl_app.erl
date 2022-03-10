@@ -1,4 +1,4 @@
--module(ros_app).
+-module(rosie_rclerl_app).
 
 -behaviour(application).
 

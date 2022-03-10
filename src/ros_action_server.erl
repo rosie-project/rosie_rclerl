@@ -12,7 +12,7 @@
 
 -export([init/1, terminate/2, handle_call/3, handle_cast/2]).
 
--include_lib("dds/include/dds_types.hrl").
+-include_lib("rosie_dds/include/dds_types.hrl").
 -include_lib("action_msgs/src/_rosie/action_msgs_goal_status_array_msg.hrl").
 -include_lib("action_msgs/src/_rosie/action_msgs_cancel_goal_srv.hrl").
 
@@ -68,7 +68,7 @@ on_client_request(Name, Request) ->
 %callbacks
 init(#state{node = Node,
             action_interface = Action,
-            callback_handler = CallbackHandler} =
+            callback_handler = _CallbackHandler} =
          S) ->
     ServerName = {?MODULE, Node, Action},
     pg:join(ServerName, self()),
@@ -110,7 +110,7 @@ terminate( _, #state{node = Node,
                             cancel_goal_service = CancelGoalService,
                             get_result_service = GetResultService,
                             feed_publisher = FeedbackPub,
-                            status_publisher = StatusPub} = S) ->
+                            status_publisher = StatusPub}) ->
     ros_node:destroy_publisher(Node, FeedbackPub),
     ros_node:destroy_publisher(Node, StatusPub),
     ros_node:destroy_service(Node, RequestGoalService),
@@ -120,12 +120,12 @@ terminate( _, #state{node = Node,
 
 handle_call({publish_feedback, Feed},
             _,
-            #state{action_interface = AI, feed_publisher = FeedbackPub} = S) ->
+            #state{action_interface = _AI, feed_publisher = FeedbackPub} = S) ->
     ros_publisher:publish(FeedbackPub, Feed),
     {reply, ok, S};
 handle_call({publish_result, GoalID, Result},
             _,
-            #state{action_interface = AI,
+            #state{action_interface = _AI,
                    goals_with_requested_results = GRR,
                    get_result_service = GetResultService,
                    cached_goal_results = Cached} =
@@ -143,7 +143,7 @@ handle_call({publish_result, GoalID, Result},
     end;
 handle_call({on_client_request, {{ClientId, RequestNumber}, Msg}},
             _,
-            #state{action_interface = AI, callback_handler = {M, Pid}} = S) ->
+            #state{action_interface = AI, callback_handler = {_M, _Pid}} = S) ->
     case AI:identify_msg(Msg) of
         send_goal_rq ->
             h_manage_goal_request(Msg, S);
@@ -157,7 +157,7 @@ handle_call({on_client_request, {{ClientId, RequestNumber}, Msg}},
     end.
 
 handle_cast({abort_goal, UUID},
-            #state{action_interface = AI, cancel_goal_service = CancelGoalService, goals_accepted = GA} = S) ->
+            #state{action_interface = _AI, cancel_goal_service = _CancelGoalService, goals_accepted = GA} = S) ->
     case (maps:get(UUID, GA))#goal.status of
         STATUS when (STATUS == ?STATUS_EXECUTING) or (STATUS == ?STATUS_CANCELING) ->
             NewState = mark_goal_as(UUID, ?STATUS_ABORTED, S),
@@ -168,7 +168,7 @@ handle_cast({abort_goal, UUID},
             {noreply, S}
     end;
 handle_cast({cancel_goal, UUID},
-            #state{action_interface = AI, cancel_goal_service = CancelGoalService, goals_accepted = GA} = S) ->
+            #state{action_interface = _AI, cancel_goal_service = _CancelGoalService, goals_accepted = GA} = S) ->
     case (maps:get(UUID, GA))#goal.status of
         ?STATUS_CANCELING ->
             NewState = mark_goal_as(UUID, ?STATUS_CANCELED, S),
@@ -181,7 +181,7 @@ handle_cast({cancel_goal, UUID},
 handle_cast(_, S) ->
     {noreply, S}.
 
-publish_goal_status_update(#state{action_interface = AI,
+publish_goal_status_update(#state{action_interface = _AI,
                                   status_publisher = S_PUB,
                                   goals_accepted = GA}) ->
     LIST =
@@ -217,9 +217,9 @@ h_manage_goal_request(Msg,
             {reply, Reply, NewState}
     end.
 
-clear_cache_for_goal(UUID,
-                     #state{action_interface = AI, cached_goal_results = CachedResults} = S) ->
-    S#state{cached_goal_results = [R || R <- CachedResults, AI:get_goal_id(R) /= UUID]}.
+% clear_cache_for_goal(UUID,
+%                      #state{action_interface = AI, cached_goal_results = CachedResults} = S) ->
+%     S#state{cached_goal_results = [R || R <- CachedResults, AI:get_goal_id(R) /= UUID]}.
 
 close_pending_goal_requests(UUID,#state{get_result_service = RS, action_interface = AI, goals_accepted = GA, goals_with_requested_results = GRR} = S) ->
     GoalState = (maps:get(UUID, GA))#goal.status,
@@ -239,7 +239,7 @@ h_manage_result_request(ClientID,
                         RequestNumber,
                         Msg,
                         #state{action_interface = AI,
-                               callback_handler = {M, Pid},
+                               callback_handler = {_M, _Pid},
                                goals_accepted = GA,
                                goals_with_requested_results = GRQ,
                                cached_goal_results = CachedResults} =
@@ -268,17 +268,15 @@ h_manage_result_request(ClientID,
 % if uuid is 0 or time is 0 i do not handle them for now
 h_manage_cancel_request(#action_msgs_cancel_goal_rq{goal_info =
                                                         #action_msgs_goal_info{goal_id =
-                                                                                   #unique_identifier_msgs_u_u_i_d{uuid
-                                                                                                                       =
-                                                                                                                       <<0:16/binary>>}}},
+                                                                                   #unique_identifier_msgs_u_u_i_d{uuid = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}}},
                         S) ->
     io:format("[ROS_ACTION_SERVER]: not implemented: management of multiple goals cancellation."),
     {reply, #action_msgs_cancel_goal_rp{return_code = ?ERROR_REJECTED}, S};
 h_manage_cancel_request(#action_msgs_cancel_goal_rq{goal_info =
                                                         #action_msgs_goal_info{goal_id = UUID,
-                                                                               stamp = T}} =
+                                                                               stamp = _T}} =
                             R,
-                        #state{action_interface = AI,
+                        #state{action_interface = _AI,
                                goals_accepted = GA,
                                callback_handler = {M, Pid}} =
                             S) ->

@@ -11,8 +11,8 @@
         start_up_param_topics_and_services/1
     ]).
 
--include_lib("ros/include/ros_commons.hrl").
--include_lib("dds/include/dds_types.hrl").
+-include_lib("rosie_rclerl/include/ros_commons.hrl").
+-include_lib("rosie_dds/include/dds_types.hrl").
 -include_lib("rcl_interfaces/src/_rosie/rcl_interfaces_parameter_value_msg.hrl").
 -include_lib("rcl_interfaces/src/_rosie/rcl_interfaces_parameter_type_msg.hrl").
 -include_lib("rcl_interfaces/src/_rosie/rcl_interfaces_parameter_descriptor_msg.hrl").

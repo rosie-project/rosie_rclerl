@@ -2,7 +2,7 @@
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--include_lib("ros/include/ros_commons.hrl").
+-include_lib("rosie_rclerl/include/ros_commons.hrl").
 -include_lib("rcl_interfaces/src/_rosie/rcl_interfaces_parameter_type_msg.hrl").
 -include_lib("rcl_interfaces/src/_rosie/rcl_interfaces_parameter_descriptor_msg.hrl").
 
@@ -25,7 +25,7 @@ all() -> [valid_parameters_declarations,
         parameter_description].
  
 init_per_suite(Config) ->
-        {ok,_} = application:ensure_all_started(ros),
+        {ok,_} = application:ensure_all_started(rosie_rclerl),
         Node = ros_context:create_node("test_node"),
         [#suite_config{ros_node = Node} | Config].
  

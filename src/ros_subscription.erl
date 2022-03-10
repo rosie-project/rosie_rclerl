@@ -11,8 +11,8 @@
 -behaviour(gen_data_reader_listener).
 -export([on_data_available/2]).
 
--include_lib("dds/include/dds_types.hrl").
--include_lib("dds/include/rtps_structure.hrl").
+-include_lib("rosie_dds/include/dds_types.hrl").
+-include_lib("rosie_dds/include/rtps_structure.hrl").
 
 -record(state,
         {msg_module,
@@ -69,7 +69,7 @@ init(#state{node = Node,
     dds_data_r:set_listener(DR, {?MODULE, Subscription}),
     {ok, S#state{dds_data_reader = DR}}.
 
-terminate(_, #state{dds_data_reader = DR} = S) ->
+terminate(_, #state{dds_data_reader = DR}) ->
     Sub = dds_domain_participant:get_default_subscriber(dds),
     dds_subscriber:delete_datareader(Sub, DR),
     ok.

@@ -15,7 +15,7 @@
 -behaviour(gen_dds_entity_owner).
 -export([get_all_dds_entities/1]).
 
--include_lib("dds/include/dds_types.hrl").
+-include_lib("rosie_dds/include/dds_types.hrl").
 
 -record(state,
         {msg_module, 
@@ -72,7 +72,7 @@ init(#state{ node = Node,
     DW = dds_publisher:create_datawriter(Pub, Topic),
     {ok, S#state{dds_data_writer = DW}}.
 
-terminate(_, #state{dds_data_writer = DW} = S) ->
+terminate(_, #state{dds_data_writer = DW}) ->
     Pub = dds_domain_participant:get_default_publisher(dds),
     dds_publisher:delete_datawriter(Pub, DW),
     ok.

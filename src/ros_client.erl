@@ -10,8 +10,8 @@
 -behaviour(gen_dds_entity_owner).
 -export([get_all_dds_entities/1]).
 
--include_lib("dds/include/rtps_structure.hrl").
--include_lib("dds/include/dds_types.hrl").
+-include_lib("rosie_dds/include/rtps_structure.hrl").
+-include_lib("rosie_dds/include/dds_types.hrl").
 
 -record(state,
         {node,
@@ -92,7 +92,7 @@ init(#state{node = Node, service_handle = Service, name_prefix = NP} = S) ->
             client_id = <<(crypto:strong_rand_bytes(8))/binary>>}}.
 
 terminate( _, #state{request_publisher=PUB,
-                                responce_subscription= SUB} = S) ->
+                                responce_subscription= SUB}) ->
     ros_publisher:destroy(PUB),
     ros_subscription:destroy(SUB),
     ok.
@@ -131,7 +131,7 @@ handle_cast({on_topic_msg, Binary},
                 S)
     when Caller /= none ->
     case Service:parse_reply(Binary) of
-        {Client_ID, RequestNumber, Reply} ->
+        {Client_ID, _RequestNumber, Reply} ->
             gen_server:reply(Caller, Reply),
             {noreply, S#state{waiting_caller = none}};
         _ ->
@@ -143,7 +143,7 @@ handle_cast({on_topic_msg, Binary},
                    service_handle = Service} =
                 S) ->
     case Service:parse_reply(Binary) of
-        {Client_ID, RequestNumber, Reply} ->
+        {Client_ID, _RequestNumber, Reply} ->
             M:on_service_reply(Pid, Reply),
             {noreply, S};
         _ ->
@@ -164,7 +164,7 @@ handle_info({wait_for_service_loop, Caller, Timeout, Start}, S) ->
     end,
     {noreply, S}.
 
-h_service_is_ready(#state{request_publisher = RP, responce_subscription = RS} = S) ->
+h_service_is_ready(#state{request_publisher = RP, responce_subscription = RS}) ->
     {[DW],_} = ros_publisher:get_all_dds_entities(RP),
     {_,[DR]} = ros_subscription:get_all_dds_entities(RS),
     Pubs = dds_data_r:get_matched_publications(DR), %io:format("~p\n",[Pubs]),

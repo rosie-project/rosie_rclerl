@@ -10,8 +10,8 @@
 -behaviour(gen_dds_entity_owner).
 -export([get_all_dds_entities/1]).
 
--include_lib("dds/include/rtps_structure.hrl").
--include_lib("dds/include/dds_types.hrl").
+-include_lib("rosie_dds/include/rtps_structure.hrl").
+-include_lib("rosie_dds/include/dds_types.hrl").
 
 -record(state,
         {node,
@@ -102,7 +102,7 @@ init(#state{node = Node,
         responce_publication = RP_id}}.
 
 terminate( _, #state{ request_subscription = SUB,
-                                responce_publication = PUB} = S) ->
+                                responce_publication = PUB}) ->
     ros_subscription:destroy(SUB),
     ros_publisher:destroy(PUB),
     ok.

@@ -4,6 +4,7 @@
 % API
 -export([
     create_node/1, 
+    create_node/2, 
     destroy_node/1, 
     create_action_client/3, 
     create_action_server/3,
@@ -16,9 +17,9 @@
 -export([init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2]).
 
 -include_lib("rmw_dds_common/src/_rosie/rmw_dds_common_participant_entities_info_msg.hrl").
--include_lib("dds/include/dds_types.hrl").
--include_lib("dds/include/rtps_structure.hrl").
--include_lib("ros/include/ros_commons.hrl").
+-include_lib("rosie_dds/include/dds_types.hrl").
+-include_lib("rosie_dds/include/rtps_structure.hrl").
+-include_lib("rosie_rclerl/include/ros_commons.hrl").
 
 -record(node_entry, { action_clients = [], action_servers = []}).
 
@@ -50,7 +51,7 @@ create_action_server(Node, ActionInterface, CallbackHandler) ->
     gen_server:call(?ROS_CONTEXT,
                     {create_action_server, Node, ActionInterface, CallbackHandler}).
 
-on_topic_msg(Name, Msg) ->
+on_topic_msg(_Name, Msg) ->
     gen_server:cast(?ROS_CONTEXT, {on_topic_msg, Msg}).
 
 update_ros_discovery() ->
@@ -90,12 +91,12 @@ init(S) ->
     }}.
 
 
-terminate(Reason, #state{ros_nodes = NODES,
+terminate(_Reason, #state{ros_nodes = NODES,
                         discovery_publisher = DP,
                         discovery_subscriber = DS} = S) ->
     [ begin 
-        [ros_action_client:destroy(C) || C <- AC],
-        [ros_action_server:destroy(S) || S <- AS]
+        [ros_action_client:destroy(Client) || Client <- AC],
+        [ros_action_server:destroy(Server) || Server <- AS]
     end || #node_entry{action_clients=AC, action_servers= AS} <- maps:values(NODES)],
     [ ros_node:destroy(N) || N <- maps:keys(NODES)],
     h_update_ros_discovery(S#state{ros_nodes= #{}}),
@@ -109,8 +110,8 @@ handle_call({create_node, Name, Options}, _, #state{ros_nodes=NODES} = S) ->
     {reply, {ros_node, Name}, S#state{ros_nodes = maps:put({ros_node, Name}, #node_entry{}, NODES) }};
 handle_call({destroy_node, Name}, _, #state{ros_nodes=NODES} = S) ->
     #node_entry{action_clients=AC, action_servers= AS} = maps:get(Name, NODES),
-    [ros_action_client:destroy(C) || C <- AC],
-    [ros_action_server:destroy(S) || S <- AS],
+    [ros_action_client:destroy(Client) || Client <- AC],
+    [ros_action_server:destroy(Server) || Server <- AS],
     ros_node:destroy(Name),
     ros_context:update_ros_discovery(),
     {reply, ok, S#state{ros_nodes = maps:remove(Name, NODES) } };
@@ -138,7 +139,8 @@ h_create_action_server(Node, ActionInterface, CallbackHandler) ->
         supervisor:start_child(ros_action_servers_sup, [Node, ActionInterface, CallbackHandler]),
     {ros_action_server, Node, ActionInterface}.
 
-h_on_topic_msg(Msg,S) ->
+h_on_topic_msg(_Msg,S) ->
+    % TODO store remote ros-nodes info
     S.
 
 guid_to_gid(#guId{prefix = PREFIX, entityId = #entityId{key = KEY, kind = KIND}}) ->

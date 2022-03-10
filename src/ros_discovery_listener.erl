@@ -6,7 +6,7 @@
 -export([start_link/0, on_data_available/2]).
 -export([init/1, handle_call/3, handle_cast/2]).
 
--include_lib("dds/include/rtps_structure.hrl").
+-include_lib("rosie_dds/include/rtps_structure.hrl").
 -include_lib("rmw_dds_common/src/_rosie/rmw_dds_common_participant_entities_info_msg.hrl").
 
 start_link() ->

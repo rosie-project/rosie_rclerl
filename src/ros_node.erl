@@ -45,9 +45,9 @@
 -behaviour(gen_server).
 -export([init/1, handle_call/3, handle_cast/2, terminate/2]).
 
--include_lib("ros/include/ros_commons.hrl").
--include_lib("dds/include/dds_types.hrl").
--include_lib("dds/include/rtps_structure.hrl").
+-include_lib("rosie_rclerl/include/ros_commons.hrl").
+-include_lib("rosie_dds/include/dds_types.hrl").
+-include_lib("rosie_dds/include/rtps_structure.hrl").
 
 -include_lib("rmw_dds_common/src/_rosie/rmw_dds_common_participant_entities_info_msg.hrl").
 -include_lib("rcl_interfaces/src/_rosie/rcl_interfaces_log_msg.hrl").
@@ -201,12 +201,12 @@ get_all_dds_entities(Name) ->
 init(
     {NodeName,
         #ros_node_options{
-            namespace = N,
+            namespace = _N,
             enable_rosout = ROSOUT,
             start_parameter_services = StartServices,
-            parameter_overrides = Override_list,
-            allow_undeclared_parameters = AllowUndeclared,
-            automatically_declare_parameters_from_overrides = AutoDeclareFromOverrides
+            parameter_overrides = _Override_list,
+            allow_undeclared_parameters = _AllowUndeclared,
+            automatically_declare_parameters_from_overrides = _AutoDeclareFromOverrides
         } = Options}
 ) ->
     % process_flag(trap_exit, true),
@@ -231,11 +231,11 @@ init(
     }}.
 
 
-terminate(_, #state{name= N,
+terminate(_, #state{name= _N,
                                 subscriptions = Subscriptions,
                                 publishers = Publishers,
                                 clients = Clients,
-                                services = Services} = S) ->
+                                services = Services}) ->
     [ros_subscription:destroy(Sub) || Sub <- Subscriptions],
     [ros_publisher:destroy(P) || P <- Publishers],
     [ros_client:destroy(C) || C <- Clients],
@@ -292,10 +292,10 @@ handle_call({create_service, Service, CallbackHandler}, _, #state{services = SRV
 handle_call({create_service, Service, QoSProfile, CallbackHandler}, _, #state{services = SRVs} = S) ->
     ID = h_create_service_qos(Service, QoSProfile, CallbackHandler, S),
     {reply, ID, S#state{services = [ID | SRVs]}};
-handle_call({destroy_subscription, Sub}, _, #state{subscriptions = Subscriptions} = S) ->
-    ros_subscription:destroy(Sub),
+handle_call({destroy_subscription, Subscription}, _, #state{subscriptions = Subscriptions} = S) ->
+    ros_subscription:destroy(Subscription),
     ros_context:update_ros_discovery(),
-    {reply, ok, S#state{subscriptions = [ S || S <- Subscriptions, S /=  Sub]}};
+    {reply, ok, S#state{subscriptions = [ Sub || Sub <- Subscriptions, Sub /=  Subscription]}};
 handle_call({destroy_publisher, Pub}, _, #state{publishers = Publishers} = S) ->
     ros_publisher:destroy(Pub),
     ros_context:update_ros_discovery(),
@@ -307,7 +307,7 @@ handle_call({destroy_client, Client}, _, #state{clients = Clients} = S) ->
 handle_call({destroy_service, Service}, _, #state{services = Services} = S) ->
     ros_service:destroy(Service),
     ros_context:update_ros_discovery(),
-    {reply, ok, S#state{services = [ S || S <- Services, S /=  Service]}};
+    {reply, ok, S#state{services = [ Srv || Srv <- Services, S /=  Service]}};
 handle_call(get_name, _, #state{name = N} = S) ->
     {reply, N, S};
 handle_call({on_client_request, {_, Msg}}, _, S) ->
@@ -425,11 +425,11 @@ h_set_parameters([Param|TL], Results, S) ->
 
 h_describe_parameters(ParamNameList, #state{
                 options = #ros_node_options{allow_undeclared_parameters=ALLOW_UNDECLARED}, 
-                parameters=P} = S) ->
+                parameters=P}) ->
     Parameters = ros_node_utils:get_parameters_from_map(ParamNameList,P),
     case not ALLOW_UNDECLARED and lists:any(fun ros_node_utils:param_type_is_unset/1, Parameters) of 
         true -> {error, parameter_not_declared};
-        false -> [ D || {D,V} <- Parameters]
+        false -> [ D || {D,_V} <- Parameters]
     end.
 
 update_existing_param_desc(N, NewDescriptor, #state{parameters=P} = S) ->
@@ -561,7 +561,7 @@ start_up_rosout(NodeID) ->
 
 mark_set_rq({Key, NEWV}, Map) ->
     case ros_node_utils:get_parameters_from_map([Key], Map) of
-        [{D, V}] when
+        [{_D, V}] when
             (V#rcl_interfaces_parameter_value.type /= ?PARAMETER_NOT_SET) and
                 (NEWV#rcl_interfaces_parameter_value.type /= ?PARAMETER_NOT_SET) and
                 (V#rcl_interfaces_parameter_value.type == NEWV#rcl_interfaces_parameter_value.type)
@@ -601,7 +601,7 @@ h_parameter_request(
         S#state{parameters = NewParamMap}
     };
 h_parameter_request(
-    #rcl_interfaces_set_parameters_atomically_rq{parameters = Params}, #state{parameters = P} = S
+    #rcl_interfaces_set_parameters_atomically_rq{parameters = _Params}, #state{parameters = _P} = S
 ) ->
     {
         #rcl_interfaces_set_parameters_atomically_rp{
@@ -621,7 +621,7 @@ h_parameter_request(
         S
     };
 h_parameter_request(
-    #rcl_interfaces_list_parameters_rq{prefixes = Prefs, depth = D}, #state{parameters = P} = S
+    #rcl_interfaces_list_parameters_rq{prefixes = _Prefs, depth = _D}, #state{parameters = P} = S
 ) ->
     {
         #rcl_interfaces_list_parameters_rp{
